@@ -18,8 +18,10 @@ plugin.init = async function ({ router, middleware }) {
   );
   router.get("/api/admin/plugins/sso-saml", renderAdmin);
 
-  router.get("/auth/saml", async (req, res) => {
+  router.get("/auth/saml", async (_, res) => {
     try {
+      winston.info("[sso-saml] Start generating login URL");
+
       const loginUrl = await ssoProvider.generateLoginUrl();
       return res.redirect(loginUrl);
     } catch (err) {
@@ -99,7 +101,9 @@ plugin.addAdminNavigation = function (header) {
 };
 
 function renderAdmin(_, res) {
-  res.render("admin/plugins/sso-saml", {});
+  console.log("start rendering admin page");
+  
+  return res.render("admin/plugins/sso-saml", {});
 }
 
 async function getOrCreateUser(samlUser) {
