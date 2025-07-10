@@ -1,31 +1,32 @@
-'use strict';
+"use strict";
 
-const fs = require('fs');
-const saml2 = require('saml2-js');
-const meta = require.main.require('./src/meta');
+const fs = require("fs");
+const saml2 = require("saml2-js");
+const meta = require.main.require("./src/meta");
 
 let sp, idp;
 
 async function configureSso() {
   if (sp && idp) return { sp, idp };
 
-  const settings = await meta.settings.get('sso-saml');
+  const settings = await meta.settings.get("sso-saml");
 
   const spCert = readCert(settings.spCert);
   const spKey = readCert(settings.spKey);
   const idpCert = readCert(settings.idpCert);
 
   const spOptions = {
-    entity_id: settings.spEntityId || 'http://localhost:4567',
+    entity_id: settings.spEntityId || "http://localhost:4567",
     private_key: spKey,
     certificate: spCert,
-    assert_endpoint: settings.assertEndpoint || 'http://localhost:4567/auth/saml/callback',
+    assert_endpoint:
+      settings.assertEndpoint || "http://localhost:4567/auth/saml/callback",
     force_authn: true,
     auth_context: {
-      comparison: 'exact',
-      class_refs: ['urn:oasis:names:tc:SAML:1.0:am:password'],
+      comparison: "exact",
+      class_refs: ["urn:oasis:names:tc:SAML:1.0:am:password"],
     },
-    nameid_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
+    nameid_format: "urn:oasis:names:tc:SAML:2.0:nameid-format:transient",
     sign_get_request: true,
     allow_unencrypted_assertion: true,
   };
@@ -45,13 +46,13 @@ async function configureSso() {
   return { sp, idp };
 }
 
-function readCert(pathOrContent = '') {
-  if (pathOrContent.trim().startsWith('-----BEGIN')) {
+function readCert(pathOrContent = "") {
+  if (pathOrContent.trim().startsWith("-----BEGIN")) {
     return pathOrContent;
   }
 
   try {
-    return fs.readFileSync(pathOrContent.trim(), 'utf-8');
+    return fs.readFileSync(pathOrContent.trim(), "utf-8");
   } catch (err) {
     throw new Error(`Cannot read certificate from path: ${pathOrContent}`);
   }
@@ -59,6 +60,7 @@ function readCert(pathOrContent = '') {
 
 async function generateLoginUrl() {
   const { sp, idp } = await configureSso();
+  console.log("sp, idp", sp, idp);
   return new Promise((resolve, reject) => {
     sp.create_login_request_url(idp, {}, (err, loginUrl) => {
       if (err) return reject(err);
@@ -82,10 +84,14 @@ async function assertLogin(req) {
 async function generateLogoutUrl({ name_id, session_index }) {
   const { sp, idp } = await configureSso();
   return new Promise((resolve, reject) => {
-    sp.create_logout_request_url(idp, { name_id, session_index }, (err, logoutUrl) => {
-      if (err) return reject(err);
-      resolve(logoutUrl);
-    });
+    sp.create_logout_request_url(
+      idp,
+      { name_id, session_index },
+      (err, logoutUrl) => {
+        if (err) return reject(err);
+        resolve(logoutUrl);
+      }
+    );
   });
 }
 
