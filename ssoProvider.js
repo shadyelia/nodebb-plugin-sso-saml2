@@ -11,8 +11,6 @@ async function configureSso() {
 
   const settings = await meta.settings.get("sso-saml");
 
-  console.log('settings', settings)
-
   const spCert = readCert(settings.spCert);
   const spKey = readCert(settings.spKey);
   const idpCert = readCert(settings.idpCert);
@@ -62,7 +60,7 @@ function readCert(pathOrContent = "") {
 
 async function generateLoginUrl() {
   const { sp, idp } = await configureSso();
-  console.log("sp, idp", sp, idp);
+
   return new Promise((resolve, reject) => {
     sp.create_login_request_url(idp, {}, (err, loginUrl) => {
       if (err) return reject(err);

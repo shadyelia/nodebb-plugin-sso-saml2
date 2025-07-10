@@ -44,16 +44,10 @@
             <label for="loginSuccessRedirectUrl">Login Success Redirect URL</label>
             <input type="text" id="loginSuccessRedirectUrl" name="loginSuccessRedirectUrl" class="form-control" placeholder="/" data-field="loginSuccessRedirectUrl" />
           </div>
-
-          <div class="form-group">
-            <label for="logoutRedirectUrl">Logout Redirect URL</label>
-            <input type="text" id="logoutRedirectUrl" name="logoutRedirectUrl" class="form-control" placeholder="/" data-field="logoutRedirectUrl" />
-          </div>
-
         </div>
       </div>
+    </form>
 
       <button type="button" class="btn btn-primary" id="save">Save Settings</button>
-    </form>
   </div>
 </div>
