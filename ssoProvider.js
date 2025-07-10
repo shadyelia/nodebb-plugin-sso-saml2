@@ -47,15 +47,15 @@ async function configureSso() {
 }
 
 function readCert(pathOrContent = "") {
-  if (pathOrContent.trim().startsWith("-----BEGIN")) {
-    return pathOrContent;
-  }
+  //if (pathOrContent.trim().startsWith("-----BEGIN")) {
+    return pathOrContent.trim();
+ // }
 
-  try {
-    return fs.readFileSync(pathOrContent.trim(), "utf-8");
-  } catch (err) {
-    throw new Error(`Cannot read certificate from path: ${pathOrContent}`);
-  }
+  // try {
+  //   return fs.readFileSync(pathOrContent.trim(), "utf-8");
+  // } catch (err) {
+  //   throw new Error(`Cannot read certificate from path: ${pathOrContent}`);
+  // }
 }
 
 async function generateLoginUrl() {
