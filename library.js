@@ -11,6 +11,8 @@ const ssoProvider = require("./ssoProvider");
 const plugin = {};
 
 plugin.init = async function ({ router, middleware }) {
+  winston.info("[sso-saml] Start init SAML 2");
+
   router.get(
     "/admin/plugins/sso-saml",
     middleware.admin.buildHeader,
@@ -101,9 +103,9 @@ plugin.addAdminNavigation = function (header) {
 };
 
 function renderAdmin(_, res) {
-  console.log("start rendering admin page");
-  
-  return res.render("admin/plugins/sso-saml", {});
+  console.log("[sso-saml] start rendering admin page");
+
+  res.render("admin/plugins/sso-saml", {});
 }
 
 async function getOrCreateUser(samlUser) {
