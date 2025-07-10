@@ -1,7 +1,5 @@
 "use strict";
 
-const fs = require("fs");
-const path = require("path");
 const user = require.main.require("./src/user");
 const groups = require.main.require("./src/groups");
 const db = require.main.require("./src/database");
@@ -85,7 +83,7 @@ plugin.overrideLogin = async function (data) {
   data.templateData.register_button = {
     url: "/auth/saml",
     text: "Login with CMMI SSO",
-    icon: "sign-in-alt",
+    icon: "fa-sign-in-alt",
   };
   return data;
 };

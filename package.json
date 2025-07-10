@@ -1,6 +1,6 @@
 {
   "name": "nodebb-plugin-sso-saml2",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "NodeBB plugin that enables SAML2 SSO using saml2-js.",
   "main": "library.js",
   "repository": {
