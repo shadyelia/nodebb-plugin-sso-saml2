@@ -99,7 +99,7 @@ plugin.addAdminNavigation = function (header) {
 };
 
 function renderAdmin(_, res) {
-  res.render("admin/plugins/sso-saml2");
+  res.render("admin/plugins/sso-saml2", {});
 }
 
 async function getOrCreateUser(samlUser) {
