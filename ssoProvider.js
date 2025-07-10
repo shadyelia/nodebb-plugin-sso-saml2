@@ -11,16 +11,18 @@ async function configureSso() {
 
   const settings = await meta.settings.get("sso-saml");
 
+  console.log('settings', settings)
+
   const spCert = readCert(settings.spCert);
   const spKey = readCert(settings.spKey);
   const idpCert = readCert(settings.idpCert);
 
   const spOptions = {
-    entity_id: settings.spEntityId || "http://localhost:4567",
+    entity_id: settings.entityId || "http://localhost:54164",
     private_key: spKey,
     certificate: spCert,
     assert_endpoint:
-      settings.assertEndpoint || "http://localhost:4567/auth/saml/callback",
+      settings.assertEndpoint || "http://localhost:54164/auth/saml/callback",
     force_authn: true,
     auth_context: {
       comparison: "exact",
@@ -32,8 +34,8 @@ async function configureSso() {
   };
 
   const idpOptions = {
-    sso_login_url: settings.idpLoginUrl,
-    sso_logout_url: settings.idpLogoutUrl,
+    sso_login_url: settings.ssoLoginUrl,
+    sso_logout_url: settings.ssoLogoutUrl,
     certificates: [idpCert],
     force_authn: true,
     sign_get_request: true,
