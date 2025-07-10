@@ -12,11 +12,11 @@ const plugin = {};
 
 plugin.init = async function ({ router, middleware }) {
   router.get(
-    "/admin/plugins/sso-saml2",
+    "/admin/plugins/sso-saml",
     middleware.admin.buildHeader,
     renderAdmin
   );
-  router.get("/api/admin/plugins/sso-saml2", renderAdmin);
+  router.get("/api/admin/plugins/sso-saml", renderAdmin);
 
   router.get("/auth/saml", async (req, res) => {
     try {
@@ -90,7 +90,7 @@ plugin.overrideLogin = async function (data) {
 
 plugin.addAdminNavigation = function (header) {
   header.authentication.push({
-    route: "/plugins/sso-saml2",
+    route: "/plugins/sso-saml",
     icon: "fa-tint",
     name: "SAML 2",
   });
@@ -99,7 +99,7 @@ plugin.addAdminNavigation = function (header) {
 };
 
 function renderAdmin(_, res) {
-  res.render("admin/plugins/sso-saml2", {});
+  res.render("admin/plugins/sso-saml", {});
 }
 
 async function getOrCreateUser(samlUser) {
