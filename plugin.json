@@ -1,0 +1,17 @@
+{
+  "id": "nodebb-plugin-sso-saml2",
+  "name": "NodeBB SSO SAML 2",
+  "description": "NodeBB Plugin that allows users to login/register via SAML2 using saml2-js.",
+  "url": "https://github.com/shadyelia/nodebb-plugin-sso-saml2",
+  "library": "./library.js",
+  "hooks": [
+    { "hook": "static:auth.init", "method": "init" },
+    { "hook": "filter:auth.overrideLogin", "method": "overrideLogin" },
+    { "hook": "filter:admin.header.build", "method": "addAdminNavigation" }
+  ],
+  "modules": {
+    "../admin/plugins/sso-saml.js": "./static/lib/admin.js"
+  },
+  "templates": "static/templates"
+}
+

@@ -1,0 +1,31 @@
+{
+  "name": "nodebb-plugin-sso-saml2",
+  "version": "2.0.0",
+  "description": "NodeBB plugin that enables SAML2 SSO using saml2-js.",
+  "main": "library.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shadyelia/nodebb-plugin-sso-saml2"
+  },
+  "keywords": [
+    "nodebb",
+    "plugin",
+    "saml",
+    "saml2",
+    "sso",
+    "single sign on"
+  ],
+  "author": {
+    "name": "Shady Elia"
+  },
+  "license": "GPL-2.0",
+  "nbbpm": {
+    "compatibility": "^3.3.0 || ^4.0.0"
+  },
+  "dependencies": {
+    "saml2-js": "^2.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
