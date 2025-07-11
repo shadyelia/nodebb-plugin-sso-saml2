@@ -10,11 +10,14 @@
     { "hook": "filter:admin.header.build", "method": "addAdminNavigation" },
     { "hook": "filter:middleware.renderHeader", "method": "addLoginButton" },
     { "hook": "static:app.load", "method": "init" },
-    { "hook": "filter:auth.init", "method": "getStrategy" }
+    { "hook": "filter:auth.init", "method": "getStrategy" },
+    {
+      "hook": "action:user.logout",
+      "method": "init"
+    }
   ],
   "modules": {
     "../admin/plugins/sso-saml.js": "./static/lib/admin.js"
   },
-  "templates": "static/templates",
-  "scripts": ["public/js/custom.js"]
+  "templates": "static/templates"
 }
