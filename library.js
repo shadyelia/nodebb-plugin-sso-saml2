@@ -107,22 +107,48 @@ plugin.addAdminNavigation = function (header) {
   return header;
 };
 
-plugin.onLogout = async function ({ req, res }) {
+plugin.filterUserLogout = async function (hookData, callback) {
   try {
-    winston.info("[sso-saml] Intercepting logout (action:app.logout)");
+    winston.info("[sso-saml] Intercepting logout (filter:user.logout)");
 
-    const userInfo = await getUserInfo(req.user);
+    const { req, res, uid } = hookData;
+
+    if (!req || !res || !uid) {
+      winston.warn("[sso-saml] Missing required parameters in logout hook");
+      return callback(null, hookData);
+    }
+
+    const userInfo = await getUserInfo({ uid });
     const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
 
+    winston.info(
+      `[sso-saml] Generated logout URL for user ${uid}: ${logoutUrl}`
+    );
+
+    // Perform logout operations
     req.logout?.();
     req.session?.destroy?.();
 
+    // Redirect to SAML logout URL
     res.redirect(logoutUrl);
+
+    // Return the modified hookData
+    callback(null, hookData);
   } catch (err) {
-    winston.error("[sso-saml] onLogout error:", err);
-    req.logout?.();
-    req.session?.destroy?.();
-    res.redirect("/");
+    winston.error("[sso-saml] filterUserLogout error:", err);
+
+    // Fallback logout behavior
+    try {
+      const { req, res } = hookData;
+      req.logout?.();
+      req.session?.destroy?.();
+      res.redirect("/");
+    } catch (fallbackErr) {
+      winston.error("[sso-saml] Fallback logout error:", fallbackErr);
+    }
+
+    // Continue with normal logout process
+    callback(null, hookData);
   }
 };
 
