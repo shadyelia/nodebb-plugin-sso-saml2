@@ -159,15 +159,16 @@ async function getOrCreateUser(samlUser) {
     await db.setObjectField("samlid:uid", samlId, uid);
   }
 
-  const allRoles = samlUser.Roles?.split(",") || [];
-  const mappedRoles = allRoles
+  // Map SAML roles to NodeBB group names
+  const roles = samlUser.Roles?.split(",") || [];
+  const groupsToJoin = roles
     .map((role) => role.trim())
-    .filter((role) => ROLE_MAP[role]); // Only include those in roleMap
+    .map((role) => ROLE_MAP[role])
+    .filter(Boolean);
 
-  winston.info("[sso-saml] Mapped user roles", mappedRoles);
+  winston.info("[sso-saml] Mapped user groups", groupsToJoin);
 
-  for (const role of mappedRoles) {
-    const group = ROLE_MAP[role];
+  for (const group of groupsToJoin) {
     try {
       await groups.join(group, uid);
     } catch (err) {
