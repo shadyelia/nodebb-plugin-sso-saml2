@@ -107,7 +107,15 @@ plugin.addAdminNavigation = function (header) {
   return header;
 };
 
-plugin.onLogout = async function ({ caller, uid } = {}) {
+plugin.onLogout = async function (params) {
+  winston.info("sso params", params);
+
+  const { caller, uid } = params
+  winston.info("sso caller, uid", caller, uid);
+  winston.info(
+    `[sso-saml] Intercepting logout request for uid ${uid}, redirecting...`
+  );
+
   const req = caller?.req;
   const res = caller?.res;
 
@@ -119,10 +127,6 @@ plugin.onLogout = async function ({ caller, uid } = {}) {
   }
 
   try {
-    winston.info(
-      `[sso-saml] Intercepting logout request for uid ${uid}, redirecting...`
-    );
-
     const userInfo = await getUserInfo(uid); // getUserInfo expects sessionUser or { uid }
     const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
 
