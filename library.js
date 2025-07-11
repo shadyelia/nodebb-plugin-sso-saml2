@@ -42,6 +42,8 @@ plugin.init = async function ({ router, middleware }) {
         const samlResponse = await ssoProvider.assertLogin(req);
         const userData = samlResponse.user;
 
+        winston.info('[sso-saml] User logged in with info', userData)
+
         const uid = await getOrCreateUser(userData);
         req.login({ uid }, async (err) => {
           if (err) {
@@ -133,6 +135,9 @@ async function getOrCreateUser(samlUser) {
 
   // Optional: Assign groups based on roles
   const roles = Array.isArray(samlUser.roles) ? samlUser.roles : [];
+  
+  winston.info('[sso-saml] User roles', roles)
+
   for (const role of roles) {
     const group = roleToGroupName(role);
     try {
