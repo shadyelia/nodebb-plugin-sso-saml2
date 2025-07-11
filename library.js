@@ -50,14 +50,23 @@ plugin.init = async function ({ router, middleware }) {
         winston.info("[sso-saml] User logged in with info", userData);
 
         const uid = await getOrCreateUser(userData);
+        winston.info(`[sso-saml] Created new user: ${samlUser.Email}`);
+
         req.login({ uid }, async (err) => {
           if (err) {
             winston.error("[sso-saml] Login session error:", err);
             return res.redirect("/login");
           }
 
-          const settings = await meta.settings.get("sso-saml");
-          res.redirect(settings.loginsuccessredirecturl || "/");
+          req.session.save(async (err) => {
+            if (err) {
+              winston.error("[sso-saml] Session save error:", err);
+              return res.redirect("/login");
+            }
+
+            const settings = await meta.settings.get("sso-saml");
+            res.redirect(settings.loginsuccessredirecturl || "/");
+          });
         });
       } catch (err) {
         winston.error("[sso-saml] SAML assertion error:", err);
@@ -171,6 +180,8 @@ async function getOrCreateUser(samlUser) {
   for (const group of groupsToJoin) {
     try {
       await groups.join(group, uid);
+
+      winston.info(`[sso-saml] User ${uid} mapped to group "${group}"`);
     } catch (err) {
       winston.warn(
         `[sso-saml] Could not join group "${group}": ${err.message}`
