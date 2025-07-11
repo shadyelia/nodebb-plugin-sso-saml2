@@ -107,20 +107,28 @@ plugin.addAdminNavigation = function (header) {
   return header;
 };
 
-plugin.onLogout = async function ({ req, res }) {
+plugin.onLogout = async function ({ uid, req, res } = {}) {
+  if (!req || !res) {
+    winston.warn(
+      `[sso-saml] Logout for uid ${uid} skipped: req or res is missing`
+    );
+    return;
+  }
+
   try {
-    winston.info("[sso-saml] Intercepting logout request, redirecting...");
+    winston.info(
+      `[sso-saml] Intercepting logout request for uid ${uid}, redirecting...`
+    );
 
     const userInfo = await getUserInfo(req.user);
     const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
 
-    // Clean up session before redirecting
     if (req.logout) req.logout();
     req.session?.destroy?.();
 
     res.redirect(logoutUrl);
   } catch (err) {
-    winston.error("[sso-saml] onLogout error:", err);
+    winston.error(`[sso-saml] onLogout error for uid ${uid}:`, err);
 
     if (req.logout) req.logout();
     req.session?.destroy?.();
