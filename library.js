@@ -75,7 +75,7 @@ plugin.init = async function ({ router, middleware }) {
     }
   );
 
-  router.post("/auth/saml/logout", async (req, res) => {
+  router.get("/auth/saml/logout", async (req, res) => {
     winston.info("[sso-saml] auth/saml/logout triggered");
 
     const uid = req.user?.uid;
