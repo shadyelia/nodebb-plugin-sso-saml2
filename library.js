@@ -40,9 +40,9 @@ plugin.init = async function ({ router, middleware }) {
 
       try {
         const samlResponse = await ssoProvider.assertLogin(req);
-        const userData = samlResponse.user;
+        const userData = samlResponse.user.attributes;
 
-        winston.info('[sso-saml] User logged in with info', userData)
+        winston.info("[sso-saml] User logged in with info", userData);
 
         const uid = await getOrCreateUser(userData);
         req.login({ uid }, async (err) => {
@@ -115,7 +115,7 @@ function renderAdmin(_, res) {
 }
 
 async function getOrCreateUser(samlUser) {
-  const samlId = samlUser.name_id || samlUser.email;
+  const samlId = samlUser.ID || samlUser.Email;
   if (!samlId) throw new Error("Missing name_id or email in SAML response");
 
   let uid = await db.getObjectField("samlid:uid", samlId);
@@ -134,9 +134,9 @@ async function getOrCreateUser(samlUser) {
   }
 
   // Optional: Assign groups based on roles
-  const roles = Array.isArray(samlUser.roles) ? samlUser.roles : [];
-  
-  winston.info('[sso-saml] User roles', roles)
+  const roles = samlUser.Roles.length > 0 ? samlUser.Roles[0].split(",") : [];
+
+  winston.info("[sso-saml] User roles", roles);
 
   for (const role of roles) {
     const group = roleToGroupName(role);
@@ -154,9 +154,7 @@ async function getOrCreateUser(samlUser) {
 
 function roleToGroupName(role) {
   const roleMap = {
-    admin: "administrators",
-    mod: "moderators",
-    member: "registered-users",
+    "MDDAP-Portal-Admin": "administrators",
   };
 
   return roleMap[role.toLowerCase()] || role.toLowerCase();
