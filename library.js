@@ -69,6 +69,8 @@ plugin.init = async function ({ router, middleware }) {
       const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
 
       if (req.logout) req.logout();
+      req.session.destroy?.();
+      
       res.redirect(logoutUrl);
     } catch (err) {
       winston.error("[sso-saml] Logout error:", err);
@@ -106,6 +108,13 @@ plugin.addAdminNavigation = function (header) {
   });
 
   return header;
+};
+
+plugin.onLogout = async function (data) {
+  winston.info("[sso-saml] Intercepting logout request, redirecting...");
+
+  data.res.redirect("/auth/saml/logout");
+  return false; // Prevent default logout behavior
 };
 
 function renderAdmin(_, res) {
