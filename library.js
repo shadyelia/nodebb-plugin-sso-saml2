@@ -50,7 +50,7 @@ plugin.init = async function ({ router, middleware }) {
         winston.info("[sso-saml] User logged in with info", userData);
 
         const uid = await getOrCreateUser(userData);
-        winston.info(`[sso-saml] Created new user: ${samlUser.Email}`);
+        winston.info(`[sso-saml] Created new user: ${userData.Email}`);
 
         req.login({ uid }, async (err) => {
           if (err) {
