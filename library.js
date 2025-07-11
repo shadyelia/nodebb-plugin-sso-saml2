@@ -8,6 +8,11 @@ const winston = require.main.require("winston");
 const bodyParser = require("body-parser");
 const ssoProvider = require("./ssoProvider");
 
+const ROLE_MAP = {
+  "MDDAP-Portal-Admin": "administrators",
+  //Add more roles as needed
+};
+
 const plugin = {};
 
 plugin.init = async function ({ router, middleware }) {
@@ -154,13 +159,15 @@ async function getOrCreateUser(samlUser) {
     await db.setObjectField("samlid:uid", samlId, uid);
   }
 
-  const roleValues = Object.values(samlUser.Roles || {});
-  const roles = Array.isArray(roleValues) ? roleValues : [];
+  const allRoles = samlUser.Roles?.split(",") || [];
+  const mappedRoles = allRoles
+    .map((role) => role.trim())
+    .filter((role) => ROLE_MAP[role]); // Only include those in roleMap
 
-  winston.info("[sso-saml] User roles", roles);
+  winston.info("[sso-saml] Mapped user roles", mappedRoles);
 
-  for (const role of roles) {
-    const group = roleToGroupName(role);
+  for (const role of mappedRoles) {
+    const group = ROLE_MAP[role];
     try {
       await groups.join(group, uid);
     } catch (err) {
@@ -171,14 +178,6 @@ async function getOrCreateUser(samlUser) {
   }
 
   return uid;
-}
-
-function roleToGroupName(role) {
-  const roleMap = {
-    "MDDAP-Portal-Admin": "administrators",
-  };
-
-  return roleMap[role.toLowerCase()] || role.toLowerCase();
 }
 
 async function getUserInfo(sessionUser) {
