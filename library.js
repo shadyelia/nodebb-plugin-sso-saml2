@@ -107,7 +107,9 @@ plugin.addAdminNavigation = function (header) {
   return header;
 };
 
-plugin.onLogout = async function ({ uid, req, res } = {}) {
+plugin.onLogout = async function (params) {
+  winston.info("[sso-saml] logout params", params);
+  const { uid, req, res } = params;
   if (!req || !res) {
     winston.warn(
       `[sso-saml] Logout for uid ${uid} skipped: req or res is missing`
