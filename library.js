@@ -76,7 +76,7 @@ plugin.init = async function ({ router, middleware }) {
   );
 
   // Add logout middleware
-  plugin.addLogoutMiddleware({ router });
+  plugin.overrideLogoutRoute({ router });
 };
 
 plugin.getStrategy = async function (strategies) {
@@ -110,44 +110,48 @@ plugin.addAdminNavigation = function (header) {
   return header;
 };
 
-plugin.addLogoutMiddleware = function ({ router }) {
-  router.use("/logout", async (req, res, next) => {
+plugin.overrideLogoutRoute = function ({ router }) {
+  router.post("/logout", async (req, res) => {
     try {
-      winston.info("[sso-saml] Intercepting logout via middleware");
-
-      if (req.method !== "POST") return next();
+      winston.info("[sso-saml] Fully handling /logout route");
 
       const uid = req.user?.uid;
       if (!uid) {
-        winston.warn("[sso-saml] No user ID found in logout middleware");
-        return next();
+        winston.warn("[sso-saml] No user found in request during logout");
+        return res.redirect("/");
       }
 
       const userInfo = await getUserInfo({ uid });
       const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
+      winston.info(`[sso-saml] Redirecting to SAML logout: ${logoutUrl}`);
 
-      winston.info(
-        `[sso-saml] Generated logout URL for user ${uid}: ${logoutUrl}`
-      );
+      // Logout (passport)
+      if (req.logout) {
+        req.logout((err) => {
+          if (err) {
+            winston.error("[sso-saml] req.logout error", err);
+          }
+        });
+      }
 
-      res.locals.samlLogoutUrl = logoutUrl;
+      // Destroy session
+      if (req.session && req.session.destroy) {
+        req.session.destroy((err) => {
+          if (err) {
+            winston.error("[sso-saml] Session destroy error", err);
+          }
 
-      next();
+          // Finally redirect
+          return res.redirect(logoutUrl);
+        });
+      } else {
+        // No session to destroy
+        return res.redirect(logoutUrl);
+      }
     } catch (err) {
-      winston.error("[sso-saml] Logout middleware error:", err);
-      next();
+      winston.error("[sso-saml] Logout error", err);
+      return res.redirect("/");
     }
-  });
-
-  router.post("/logout", (_, res, next) => {
-    if (res.locals.samlLogoutUrl) {
-      winston.info(
-        "[sso-saml] Redirecting to SAML logout URL after session cleared"
-      );
-      return res.redirect(res.locals.samlLogoutUrl);
-    }
-
-    next();
   });
 };
 
