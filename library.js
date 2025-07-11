@@ -33,7 +33,7 @@ plugin.init = async function ({ router, middleware }) {
   });
 
   router.post(
-    "/auth/saml/callback",
+    "/sso/assert",
     bodyParser.urlencoded({ extended: false }),
     async (req, res) => {
       winston.info("[sso-saml] Start call back from login");
