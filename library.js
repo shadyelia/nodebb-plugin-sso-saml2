@@ -138,7 +138,7 @@ async function getOrCreateUser(samlUser) {
     uid = await user.getUidByEmail(samlUser.Email);
     if (!uid) {
       uid = await user.create({
-        username: samlUser.Email || samlUser.FirstName || samlUser.ID,
+        username: samlUser.FirstName,
         email: samlUser.Email,
       });
     }
