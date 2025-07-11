@@ -75,8 +75,44 @@ plugin.init = async function ({ router, middleware }) {
     }
   );
 
-  // Add logout middleware
-  plugin.addLogoutRoute({ router });
+  router.get("/auth/saml/logout", async (req, res) => {
+    try {
+      winston.info("[sso-saml] Start generating logout URL");
+
+      const uid = req.user?.uid || req.session?.uid;
+      if (!uid) {
+        winston.warn("[sso-saml] No user found in request during logout");
+        return res.redirect("/");
+      }
+
+      const userInfo = await getUserInfo({ uid });
+      const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
+      winston.info(`[sso-saml] Generated logout URL: ${logoutUrl}`);
+
+      // Destroy session and clear cookies
+      if (req.session && req.session.destroy) {
+        await new Promise((resolve, reject) => {
+          req.session.destroy((err) => {
+            if (err) {
+              winston.error("[sso-saml] Error destroying session:", err);
+              return reject(err);
+            }
+            winston.info("[sso-saml] Session destroyed");
+            res.clearCookie("connect.sid"); // Adjust cookie name if different
+            resolve();
+          });
+        });
+      } else {
+        res.clearCookie("connect.sid");
+      }
+
+      winston.info(`[sso-saml] Redirecting to: ${logoutUrl}`);
+      return res.redirect(logoutUrl);
+    } catch (err) {
+      winston.error("[sso-saml] Logout handler error:", err);
+      return res.redirect("/"); // Fallback
+    }
+  });
 };
 
 plugin.getStrategy = async function (strategies) {
@@ -108,56 +144,6 @@ plugin.addAdminNavigation = function (header) {
   });
 
   return header;
-};
-
-plugin.addLogoutRoute = function ({ router }) {
-  router.route("/logout").post(async (req, res) => {
-    try {
-      winston.info("[sso-saml] Fully overriding /logout");
-
-      const uid = req.user?.uid || req.session?.uid;
-
-      if (!uid) {
-        winston.warn("[sso-saml] No user found in request during logout");
-        if (req.xhr) {
-          return res.status(200).json({ status: "ok", url: "/" });
-        }
-        return res.redirect("/");
-      }
-
-      const userInfo = await getUserInfo({ uid });
-      const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
-
-      // Destroy session and clear cookies
-      if (req.session && req.session.destroy) {
-        await new Promise((resolve, reject) => {
-          req.session.destroy((err) => {
-            if (err) {
-              winston.error("[sso-saml] Error destroying session:", err);
-              return reject(err);
-            }
-            winston.info("[sso-saml] Session destroyed");
-            res.clearCookie("connect.sid");
-            resolve();
-          });
-        });
-      } else {
-        res.clearCookie("connect.sid");
-      }
-
-      winston.info(`[sso-saml] Attempting redirect to: ${logoutUrl}`);
-
-       return res.redirect(logoutUrl);
-    } catch (err) {
-      winston.error("[sso-saml] Logout handler error:", err);
-      if (req.xhr) {
-        return res
-          .status(500)
-          .json({ status: "error", message: "Logout failed" });
-      }
-      return res.redirect("/"); // Fallback
-    }
-  });
 };
 
 function renderAdmin(_, res) {
