@@ -111,11 +111,11 @@ plugin.addAdminNavigation = function (header) {
 };
 
 plugin.overrideLogoutRoute = function ({ router }) {
-  router.post("/logout", async (req, res) => {
+  router.route("/logout").all(async (req, res) => {
     try {
-      winston.info("[sso-saml] Fully handling /logout route");
+      winston.info("[sso-saml] Fully overriding /logout");
 
-      const uid = req.user?.uid;
+      const uid = req.user?.uid || req.session?.uid;
       if (!uid) {
         winston.warn("[sso-saml] No user found in request during logout");
         return res.redirect("/");
@@ -123,33 +123,37 @@ plugin.overrideLogoutRoute = function ({ router }) {
 
       const userInfo = await getUserInfo({ uid });
       const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
-      winston.info(`[sso-saml] Redirecting to SAML logout: ${logoutUrl}`);
+      winston.info(`[sso-saml] Generated logout URL: ${logoutUrl}`);
 
-      // Logout (passport)
-      if (req.logout) {
-        req.logout((err) => {
-          if (err) {
-            winston.error("[sso-saml] req.logout error", err);
-          }
-        });
+      // Log out via passport (async-safe)
+      if (typeof req.logout === "function") {
+        try {
+          await new Promise((resolve, reject) =>
+            req.logout((err) => (err ? reject(err) : resolve()))
+          );
+        } catch (err) {
+          winston.warn("[sso-saml] req.logout error", err);
+        }
       }
 
-      // Destroy session
-      if (req.session && req.session.destroy) {
+      // Destroy session safely
+      if (req.session && typeof req.session.destroy === "function") {
         req.session.destroy((err) => {
           if (err) {
             winston.error("[sso-saml] Session destroy error", err);
           }
 
-          // Finally redirect
-          return res.redirect(logoutUrl);
+          // Avoid letting NodeBB continue
+          res.writeHead(302, { Location: logoutUrl });
+          return res.end();
         });
       } else {
         // No session to destroy
-        return res.redirect(logoutUrl);
+        res.writeHead(302, { Location: logoutUrl });
+        return res.end();
       }
     } catch (err) {
-      winston.error("[sso-saml] Logout error", err);
+      winston.error("[sso-saml] Logout override error", err);
       return res.redirect("/");
     }
   });
