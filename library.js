@@ -74,6 +74,9 @@ plugin.init = async function ({ router, middleware }) {
       }
     }
   );
+
+  // Add logout middleware
+  // plugin.addLogoutMiddleware({ router });
 };
 
 plugin.getStrategy = async function (strategies) {
@@ -107,19 +110,16 @@ plugin.addAdminNavigation = function (header) {
   return header;
 };
 
-// Replace plugin.onLogout with filter:user.logout hook
-plugin.filterUserLogout = async function (hookData) {
+// Use response hook to intercept logout request
+plugin.responseLogout = async function (req, res) {
   try {
-    winston.info("[sso-saml] Intercepting logout (filter:user.logout)");
-    winston.info("[sso-saml] logout params", hookData);
+    winston.info("[sso-saml] Intercepting logout (response:user.logout)");
 
-    const { caller, next } = hookData;
-    const { req, uid } = caller;
-
-    // Ensure we have all required parameters
-    if (!req || !uid) {
-      winston.warn("[sso-saml] Missing required parameters in logout hook");
-      return hookData;
+    // Get user info before logout
+    const uid = req.user?.uid;
+    if (!uid) {
+      winston.warn("[sso-saml] No user ID found in logout request");
+      return; // Let NodeBB handle normal logout
     }
 
     const userInfo = await getUserInfo({ uid });
@@ -129,36 +129,65 @@ plugin.filterUserLogout = async function (hookData) {
       `[sso-saml] Generated logout URL for user ${uid}: ${logoutUrl}`
     );
 
+    // Perform logout operations
     req.logout?.();
     req.session?.destroy?.();
 
-    const modifiedHookData = {
-      ...hookData,
-      next: logoutUrl,
-    };
-
-    return modifiedHookData;
+    // Redirect to SAML logout URL
+    return res.redirect(logoutUrl);
   } catch (err) {
-    winston.error("[sso-saml] filterUserLogout error:", err);
+    winston.error("[sso-saml] responseLogout error:", err);
 
+    // Fallback - let NodeBB handle normal logout
     try {
-      const { caller } = hookData;
-      const { req } = caller;
-
       req.logout?.();
       req.session?.destroy?.();
-
-      return {
-        ...hookData,
-        next: "/",
-      };
+      return res.redirect("/");
     } catch (fallbackErr) {
       winston.error("[sso-saml] Fallback logout error:", fallbackErr);
-
-      return hookData;
+      // Don't return anything - let NodeBB handle it
     }
   }
 };
+
+// // Alternative approach using middleware in router
+// plugin.addLogoutMiddleware = function ({ router }) {
+//   router.use("/logout", async (req, res, next) => {
+//     try {
+//       winston.info("[sso-saml] Intercepting logout via middleware");
+
+//       // Only intercept POST requests to /logout
+//       if (req.method !== "POST") {
+//         return next();
+//       }
+
+//       const uid = req.user?.uid;
+//       if (!uid) {
+//         winston.warn("[sso-saml] No user ID found in logout middleware");
+//         return next();
+//       }
+
+//       const userInfo = await getUserInfo({ uid });
+//       const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
+
+//       winston.info(
+//         `[sso-saml] Generated logout URL for user ${uid}: ${logoutUrl}`
+//       );
+
+//       // Perform logout operations
+//       req.logout?.();
+//       req.session?.destroy?.();
+
+//       // Redirect to SAML logout URL
+//       return res.redirect(logoutUrl);
+//     } catch (err) {
+//       winston.error("[sso-saml] Logout middleware error:", err);
+
+//       // Fallback - continue to normal logout
+//       return next();
+//     }
+//   });
+// };
 
 function renderAdmin(_, res) {
   console.log("[sso-saml] start rendering admin page");

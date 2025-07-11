@@ -12,8 +12,8 @@
     { "hook": "static:app.load", "method": "init" },
     { "hook": "filter:auth.init", "method": "getStrategy" },
     {
-      "hook": "filter:user.logout",
-      "method": "filterUserLogout"
+      "hook": "response:user.logout",
+      "method": "responseLogout"
     }
   ],
   "modules": {
