@@ -40,7 +40,7 @@ plugin.init = async function ({ router, middleware }) {
 
       try {
         const samlResponse = await ssoProvider.assertLogin(req);
-        const userData = samlResponse.user.attributes;
+        const userData = normalizeSamlAttributes(samlResponse.user.attributes);
 
         winston.info("[sso-saml] User logged in with info", userData);
 
@@ -114,6 +114,20 @@ function renderAdmin(_, res) {
   res.render("admin/plugins/sso-saml", {});
 }
 
+function normalizeSamlAttributes(rawData) {
+  const normalized = {};
+
+  for (const key in rawData) {
+    if (Array.isArray(rawData[key])) {
+      normalized[key] = rawData[key][0];
+    } else {
+      normalized[key] = rawData[key];
+    }
+  }
+
+  return normalized;
+}
+
 async function getOrCreateUser(samlUser) {
   const samlId = samlUser.ID || samlUser.Email;
   if (!samlId) throw new Error("Missing name_id or email in SAML response");
@@ -134,7 +148,7 @@ async function getOrCreateUser(samlUser) {
   }
 
   // Optional: Assign groups based on roles
-  const roles = samlUser.Roles.length > 0 ? samlUser.Roles[0].split(",") : [];
+  const roles = samlUser.Roles?.split(",") || [];
 
   winston.info("[sso-saml] User roles", roles);
 
