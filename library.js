@@ -121,11 +121,11 @@ async function getOrCreateUser(samlUser) {
   let uid = await db.getObjectField("samlid:uid", samlId);
 
   if (!uid) {
-    uid = await user.getUidByEmail(samlUser.email);
+    uid = await user.getUidByEmail(samlUser.Email);
     if (!uid) {
       uid = await user.create({
-        username: samlUser.display_name || samlUser.name_id || samlUser.email,
-        email: samlUser.email,
+        username: samlUser.Email || samlUser.FirstName || samlUser.ID,
+        email: samlUser.Email,
       });
     }
 
