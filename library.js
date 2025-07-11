@@ -74,6 +74,23 @@ plugin.init = async function ({ router, middleware }) {
       }
     }
   );
+
+  router.get("/auth/saml/logout", async (req, res) => {
+    try {
+      winston.info("[sso-saml] Start logout the user");
+
+      const userInfo = await getUserInfo(req.user);
+      const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
+
+      req.logout?.();
+      req.session?.destroy?.();
+
+      res.redirect(logoutUrl);
+    } catch (err) {
+      winston.error("[sso-saml] Logout error:", err);
+      res.redirect("/");
+    }
+  });
 };
 
 plugin.getStrategy = async function (strategies) {
@@ -107,37 +124,18 @@ plugin.addAdminNavigation = function (header) {
   return header;
 };
 
-plugin.onLogout = async function ({caller}) {
-  winston.info("sso caller", caller);
+plugin.overrideLogout = async function (data) {
+  const { req, res } = data;
 
-  const { req, res, uid } = params
-  winston.info("sso req", req);
-  winston.info("sso req", res);
-  winston.info("sso req", uid);
+  // Optional: clean session
+  req.logout?.();
+  req.session?.destroy?.();
 
-  if (!req || !res) {
-    winston.warn(
-      `[sso-saml] Logout for uid ${uid} skipped: req or res is missing`
-    );
-    return;
-  }
+  // Redirect to your custom logout URL
+  res.redirect("/auth/saml/logout");
 
-  try {
-    const userInfo = await getUserInfo(uid); // getUserInfo expects sessionUser or { uid }
-    const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
-
-    if (req.logout) req.logout();
-    req.session?.destroy?.();
-
-    res.redirect(logoutUrl);
-  } catch (err) {
-    winston.error(`[sso-saml] onLogout error for uid ${uid}:`, err);
-
-    if (req.logout) req.logout();
-    req.session?.destroy?.();
-
-    res.redirect("/");
-  }
+  // Prevent NodeBB from continuing its default logout logic
+  return null;
 };
 
 function renderAdmin(_, res) {
@@ -203,9 +201,9 @@ async function getOrCreateUser(samlUser) {
   return uid;
 }
 
-async function getUserInfo(sessionUserUID) {
-  if (!sessionUserUID) return {};
-  const samlId = await user.getUserField(sessionUserUID, "samlid");
+async function getUserInfo(sessionUser) {
+  if (!sessionUser || !sessionUser.uid) return {};
+  const samlId = await user.getUserField(sessionUser.uid, "samlid");
   return {
     name_id: samlId,
     session_index: null,
