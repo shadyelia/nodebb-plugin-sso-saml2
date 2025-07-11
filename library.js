@@ -133,9 +133,21 @@ plugin.addLogoutMiddleware = function ({ router }) {
         `[sso-saml] Generated logout URL for user ${uid}: ${logoutUrl}`
       );
 
-      // Perform logout operations
-      req.logout?.();
-      req.session?.destroy?.();
+      if (req.logout) {
+        req.logout((err) => {
+          if (err) {
+            winston.error("[sso-saml] Logout error:", err);
+          }
+        });
+      }
+
+      if (req.session && req.session.destroy) {
+        req.session.destroy((err) => {
+          if (err) {
+            winston.error("[sso-saml] Session destroy error:", err);
+          }
+        });
+      }
 
       // Redirect to SAML logout URL
       return res.redirect(logoutUrl);
