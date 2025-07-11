@@ -74,52 +74,6 @@ plugin.init = async function ({ router, middleware }) {
       }
     }
   );
-
-  const { hooks } = require.main.require("./src/plugins");
-  hooks.register("sso-saml", {
-    hook: "action:user.logout",
-    method: async function (data) {
-      try {
-        winston.info("[sso-saml] action:user.logout hook triggered");
-        const { uid, req, res } = data;
-
-        if (!uid) {
-          winston.warn("[sso-saml] No user ID provided in logout hook");
-          return res.redirect("/");
-        }
-
-        const userInfo = await getUserInfo({ uid });
-        const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
-        winston.info(`[sso-saml] Generated logout URL (hook): ${logoutUrl}`);
-
-        // Destroy session
-        if (req.session && req.session.destroy) {
-          await new Promise((resolve, reject) => {
-            req.session.destroy((err) => {
-              if (err) {
-                winston.error(
-                  "[sso-saml] Error destroying session (hook):",
-                  err
-                );
-                return reject(err);
-              }
-              winston.info("[sso-saml] Session destroyed (hook)");
-              res.clearCookie("connect.sid"); // Adjust cookie name if different
-              resolve();
-            });
-          });
-        } else {
-          res.clearCookie("connect.sid");
-        }
-
-        winston.info(`[sso-saml] Redirecting to (hook): ${logoutUrl}`);
-        return res.redirect(logoutUrl);
-      } catch (err) {
-        winston.error("[sso-saml] Logout hook error:", err);
-        return res.redirect("/");
-      }
-    },
-  });
 };
 
 plugin.getStrategy = async function (strategies) {
@@ -151,6 +105,46 @@ plugin.addAdminNavigation = function (header) {
   });
 
   return header;
+};
+
+plugin.logout = async function (data) {
+  try {
+    winston.info("[sso-saml] action:user.logout hook triggered");
+    const { uid, req, res } = data;
+    winston.info("[sso-saml] data", uid, req, res);
+
+    if (!uid) {
+      winston.warn("[sso-saml] No user ID provided in logout hook");
+      return res.redirect("/");
+    }
+
+    const userInfo = await getUserInfo({ uid });
+    const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
+    winston.info(`[sso-saml] Generated logout URL (hook): ${logoutUrl}`);
+
+    // Destroy session
+    if (req.session && req.session.destroy) {
+      await new Promise((resolve, reject) => {
+        req.session.destroy((err) => {
+          if (err) {
+            winston.error("[sso-saml] Error destroying session (hook):", err);
+            return reject(err);
+          }
+          winston.info("[sso-saml] Session destroyed (hook)");
+          res.clearCookie("connect.sid"); // Adjust cookie name if different
+          resolve();
+        });
+      });
+    } else {
+      res.clearCookie("connect.sid");
+    }
+
+    winston.info(`[sso-saml] Redirecting to (hook): ${logoutUrl}`);
+    return res.redirect(logoutUrl);
+  } catch (err) {
+    winston.error("[sso-saml] Logout hook error:", err);
+    return res.redirect("/");
+  }
 };
 
 function renderAdmin(_, res) {
