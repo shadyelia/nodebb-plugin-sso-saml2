@@ -154,8 +154,8 @@ async function getOrCreateUser(samlUser) {
     await db.setObjectField("samlid:uid", samlId, uid);
   }
 
-  // Optional: Assign groups based on roles
-  const roles = samlUser.Roles?.split(",") || [];
+  const roleValues = Object.values(samlUser.Roles || {});
+  const roles = Array.isArray(roleValues) ? roleValues : [];
 
   winston.info("[sso-saml] User roles", roles);
 
