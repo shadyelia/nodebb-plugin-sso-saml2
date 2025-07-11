@@ -126,23 +126,28 @@ plugin.addLogoutRoute = function ({ router }) {
       const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
       winston.info(`[sso-saml] Generated logout URL: ${logoutUrl}`);
 
-      // Manually destroy session before redirecting
+      // Destroy session and clear cookies
       if (req.session && req.session.destroy) {
-        req.session.destroy((err) => {
-          if (err) {
-            winston.error("[sso-saml] Error destroying session:", err);
-          } else {
+        return new Promise((resolve, reject) => {
+          req.session.destroy((err) => {
+            if (err) {
+              winston.error("[sso-saml] Error destroying session:", err);
+              return reject(err);
+            }
             winston.info("[sso-saml] Session destroyed");
-          }
-          // Redirect regardless of session destroy outcome
-          return res.redirect(logoutUrl);
+            // Clear session cookie
+            res.clearCookie("connect.sid"); // Adjust cookie name if different
+            resolve(res.redirect(logoutUrl));
+          });
         });
       } else {
+        // Clear cookie even if no session
+        res.clearCookie("connect.sid");
         return res.redirect(logoutUrl);
       }
     } catch (err) {
       winston.error("[sso-saml] Logout handler error:", err);
-      return res.redirect("/"); // fallback
+      return res.redirect("/"); // Fallback
     }
   });
 };
