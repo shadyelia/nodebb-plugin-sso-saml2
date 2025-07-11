@@ -127,7 +127,6 @@ plugin.addLogoutRoute = function ({ router }) {
 
       const userInfo = await getUserInfo({ uid });
       const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
-      winston.info(`[sso-saml] Generated logout URL: ${logoutUrl}`);
 
       // Destroy session and clear cookies
       if (req.session && req.session.destroy) {
@@ -138,7 +137,7 @@ plugin.addLogoutRoute = function ({ router }) {
               return reject(err);
             }
             winston.info("[sso-saml] Session destroyed");
-            res.clearCookie("connect.sid"); // Adjust cookie name if different
+            res.clearCookie("connect.sid");
             resolve();
           });
         });
@@ -146,17 +145,9 @@ plugin.addLogoutRoute = function ({ router }) {
         res.clearCookie("connect.sid");
       }
 
-      // Log redirect attempt
       winston.info(`[sso-saml] Attempting redirect to: ${logoutUrl}`);
 
-      // Handle AJAX and non-AJAX requests
-      if (req.xhr) {
-        // For AJAX, return JSON with the logout URL
-        return res.status(200).json({ status: "ok", url: logoutUrl });
-      } else {
-        // For non-AJAX, perform server-side redirect
-        return res.redirect(logoutUrl);
-      }
+       return res.redirect(logoutUrl);
     } catch (err) {
       winston.error("[sso-saml] Logout handler error:", err);
       if (req.xhr) {
