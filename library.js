@@ -75,32 +75,6 @@ plugin.init = async function ({ router, middleware }) {
     }
   );
 
-router.get("/auth/saml/logout", async (req, res) => {
-  winston.info("[sso-saml] auth/saml/logout triggered get");
-
-  const uid = req.user?.uid;
-  if (!uid) return res.redirect("/");
-
-  const userInfo = await getUserInfo({ uid });
-  const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
-
-  req.logout((err) => {
-    if (err) {
-      winston.error("[sso-saml] Logout error:", err);
-    }
-
-    req.session?.destroy((sessionErr) => {
-      if (sessionErr) {
-        winston.error("[sso-saml] Session destroy error:", sessionErr);
-      }
-
-      // Always redirect after cleanup
-      winston.info(`[sso-saml] Redirecting to SAML logout URL: ${logoutUrl}`);
-      res.redirect(logoutUrl);
-    });
-  });
-});
-
 router.post("/auth/saml/logout", async (req, res) => {
   winston.info("[sso-saml] auth/saml/logout triggered post");
 

@@ -15,5 +15,7 @@
   "modules": {
     "../admin/plugins/sso-saml.js": "./static/lib/admin.js"
   },
-  "templates": "static/templates"
+  "templates": "static/templates",
+  "scripts": ["static/lib/client/logout-override.js"],
+  "clientScripts": ["static/lib/client/logout-override.js"]
 }
