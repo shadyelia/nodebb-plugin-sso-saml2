@@ -119,6 +119,9 @@ plugin.addLogoutRoute = function ({ router }) {
 
       if (!uid) {
         winston.warn("[sso-saml] No user found in request during logout");
+        if (req.xhr) {
+          return res.status(200).json({ status: "ok", url: "/" });
+        }
         return res.redirect("/");
       }
 
@@ -135,18 +138,28 @@ plugin.addLogoutRoute = function ({ router }) {
               return reject(err);
             }
             winston.info("[sso-saml] Session destroyed");
-            // Clear session cookie
-            res.clearCookie("connect.sid"); // Adjust cookie name if different
-            resolve(res.redirect(logoutUrl));
+            res.clearCookie("connect.sid");
+            if (req.xhr) {
+              resolve(res.status(200).json({ status: "ok", url: logoutUrl }));
+            } else {
+              resolve(res.redirect(logoutUrl));
+            }
           });
         });
       } else {
-        // Clear cookie even if no session
         res.clearCookie("connect.sid");
+        if (req.xhr) {
+          return res.status(200).json({ status: "ok", url: logoutUrl });
+        }
         return res.redirect(logoutUrl);
       }
     } catch (err) {
       winston.error("[sso-saml] Logout handler error:", err);
+      if (req.xhr) {
+        return res
+          .status(500)
+          .json({ status: "error", message: "Logout failed" });
+      }
       return res.redirect("/"); // Fallback
     }
   });
