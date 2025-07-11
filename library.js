@@ -107,9 +107,10 @@ plugin.addAdminNavigation = function (header) {
   return header;
 };
 
-plugin.onLogout = async function (params) {
-  winston.info("[sso-saml] logout params", params);
-  const { uid, req, res } = params;
+plugin.onLogout = async function ({ caller, uid } = {}) {
+  const req = caller?.req;
+  const res = caller?.res;
+
   if (!req || !res) {
     winston.warn(
       `[sso-saml] Logout for uid ${uid} skipped: req or res is missing`
@@ -122,7 +123,7 @@ plugin.onLogout = async function (params) {
       `[sso-saml] Intercepting logout request for uid ${uid}, redirecting...`
     );
 
-    const userInfo = await getUserInfo(req.user);
+    const userInfo = await getUserInfo(uid); // getUserInfo expects sessionUser or { uid }
     const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
 
     if (req.logout) req.logout();
@@ -202,12 +203,12 @@ async function getOrCreateUser(samlUser) {
   return uid;
 }
 
-async function getUserInfo(sessionUser) {
-  if (!sessionUser || !sessionUser.uid) return {};
-  const samlId = await user.getUserField(sessionUser.uid, "samlid");
+async function getUserInfo(sessionUserUID) {
+  if (!sessionUserUID) return {};
+  const samlId = await user.getUserField(sessionUserUID, "samlid");
   return {
     name_id: samlId,
-    session_index: sessionUser.sessionIndex || null, // if your IDP uses session_index
+    session_index: null,
   };
 }
 
