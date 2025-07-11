@@ -131,26 +131,30 @@ plugin.addLogoutRoute = function ({ router }) {
 
       // Destroy session and clear cookies
       if (req.session && req.session.destroy) {
-        return new Promise((resolve, reject) => {
+        await new Promise((resolve, reject) => {
           req.session.destroy((err) => {
             if (err) {
               winston.error("[sso-saml] Error destroying session:", err);
               return reject(err);
             }
             winston.info("[sso-saml] Session destroyed");
-            res.clearCookie("connect.sid");
-            if (req.xhr) {
-              resolve(res.status(200).json({ status: "ok", url: logoutUrl }));
-            } else {
-              resolve(res.redirect(logoutUrl));
-            }
+            res.clearCookie("connect.sid"); // Adjust cookie name if different
+            resolve();
           });
         });
       } else {
         res.clearCookie("connect.sid");
-        if (req.xhr) {
-          return res.status(200).json({ status: "ok", url: logoutUrl });
-        }
+      }
+
+      // Log redirect attempt
+      winston.info(`[sso-saml] Attempting redirect to: ${logoutUrl}`);
+
+      // Handle AJAX and non-AJAX requests
+      if (req.xhr) {
+        // For AJAX, return JSON with the logout URL
+        return res.status(200).json({ status: "ok", url: logoutUrl });
+      } else {
+        // For non-AJAX, perform server-side redirect
         return res.redirect(logoutUrl);
       }
     } catch (err) {
