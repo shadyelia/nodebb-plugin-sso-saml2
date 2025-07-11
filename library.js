@@ -74,25 +74,6 @@ plugin.init = async function ({ router, middleware }) {
       }
     }
   );
-
-  router.get("/logout", async (req, res) => {
-    try {
-      winston.info("[sso-saml] Intercepting /logout route");
-
-      // Optional: clean up session
-      req.logout?.();
-      req.session?.destroy?.();
-
-      // Redirect to SAML logout URL
-      const userInfo = await getUserInfo(req.user);
-      const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
-
-      return res.redirect(logoutUrl);
-    } catch (err) {
-      winston.error("[sso-saml] Error during logout override", err);
-      return res.redirect("/");
-    }
-  });
 };
 
 plugin.getStrategy = async function (strategies) {
@@ -124,6 +105,25 @@ plugin.addAdminNavigation = function (header) {
   });
 
   return header;
+};
+
+plugin.onLogout = async function ({ req, res }) {
+  try {
+    winston.info("[sso-saml] Intercepting logout (action:app.logout)");
+
+    const userInfo = await getUserInfo(req.user);
+    const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
+
+    req.logout?.();
+    req.session?.destroy?.();
+
+    res.redirect(logoutUrl);
+  } catch (err) {
+    winston.error("[sso-saml] onLogout error:", err);
+    req.logout?.();
+    req.session?.destroy?.();
+    res.redirect("/");
+  }
 };
 
 function renderAdmin(_, res) {
