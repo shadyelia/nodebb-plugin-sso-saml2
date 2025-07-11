@@ -11,7 +11,7 @@
     { "hook": "filter:middleware.renderHeader", "method": "addLoginButton" },
     { "hook": "static:app.load", "method": "init" },
     { "hook": "filter:auth.init", "method": "getStrategy" },
-    { "hook": "filter:auth.logout", "method": "onLogout" }
+    { "hook": "static:logout", "method": "onLogout" }
   ],
   "modules": {
     "../admin/plugins/sso-saml.js": "./static/lib/admin.js"
