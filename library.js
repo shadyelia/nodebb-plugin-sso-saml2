@@ -75,20 +75,22 @@ plugin.init = async function ({ router, middleware }) {
     }
   );
 
-  router.get("/auth/saml/logout", async (req, res) => {
+  router.get("/logout", async (req, res) => {
     try {
-      winston.info("[sso-saml] Start logout the user");
+      winston.info("[sso-saml] Intercepting /logout route");
 
-      const userInfo = await getUserInfo(req.user);
-      const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
-
+      // Optional: clean up session
       req.logout?.();
       req.session?.destroy?.();
 
-      res.redirect(logoutUrl);
+      // Redirect to SAML logout URL
+      const userInfo = await getUserInfo(req.user);
+      const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
+
+      return res.redirect(logoutUrl);
     } catch (err) {
-      winston.error("[sso-saml] Logout error:", err);
-      res.redirect("/");
+      winston.error("[sso-saml] Error during logout override", err);
+      return res.redirect("/");
     }
   });
 };
@@ -122,20 +124,6 @@ plugin.addAdminNavigation = function (header) {
   });
 
   return header;
-};
-
-plugin.overrideLogout = async function (data) {
-  const { req, res } = data;
-
-  // Optional: clean session
-  req.logout?.();
-  req.session?.destroy?.();
-
-  // Redirect to your custom logout URL
-  res.redirect("/auth/saml/logout");
-
-  // Prevent NodeBB from continuing its default logout logic
-  return null;
 };
 
 function renderAdmin(_, res) {
