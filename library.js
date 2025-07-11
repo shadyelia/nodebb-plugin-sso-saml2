@@ -36,6 +36,8 @@ plugin.init = async function ({ router, middleware }) {
     "/auth/saml/callback",
     bodyParser.urlencoded({ extended: false }),
     async (req, res) => {
+      winston.info("[sso-saml] Start call back from login");
+
       try {
         const samlResponse = await ssoProvider.assertLogin(req);
         const userData = samlResponse.user;
@@ -59,6 +61,8 @@ plugin.init = async function ({ router, middleware }) {
 
   router.get("/auth/saml/logout", async (req, res) => {
     try {
+      winston.info("[sso-saml] Start logout the user");
+
       const userInfo = await getUserInfo(req.user);
       const logoutUrl = await ssoProvider.generateLogoutUrl(userInfo);
 

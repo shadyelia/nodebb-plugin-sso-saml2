@@ -16,11 +16,10 @@ async function configureSso() {
   const idpCert = readCert(settings.idpCert);
 
   const spOptions = {
-    entity_id: settings.entityId || "http://localhost:54164",
+    entity_id: settings.entityId,
     private_key: spKey,
     certificate: spCert,
-    assert_endpoint:
-      settings.assertEndpoint || "http://localhost:54164/auth/saml/callback",
+    assert_endpoint: settings.assertEndpoint,
     force_authn: true,
     auth_context: {
       comparison: "exact",
